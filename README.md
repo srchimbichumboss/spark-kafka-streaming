@@ -36,3 +36,23 @@ sudo /opt/Kafka/bin/kafka-server-start.sh /opt/Kafka/config/server.properties &
 python3 kafka_producer.py
 
 python3 kafka_producer.py
+
+
+---
+
+## ✅ Iniciar servicios
+```bash
+# ZooKeeper
+sudo /opt/Kafka/bin/zookeeper-server-start.sh /opt/Kafka/config/zookeeper.properties &
+
+# Kafka
+sudo /opt/Kafka/bin/kafka-server-start.sh /opt/Kafka/config/server.properties &
+
+
+/opt/Kafka/bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic sensor_data
+
+python3 kafka_producer.py
+
+spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3 spark_streaming_consumer.py
+
+http://192.168.0.134:4040
