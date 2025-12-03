@@ -1,0 +1,15 @@
+*.log
+*.tmp
+*.swp
+*.csv
+*.parquet
+*.avro
+*.orc
+*.crc
+*.snappy
+*.class
+*.jar
+output/
+checkpoint/
+logs/
+.env
