@@ -87,6 +87,64 @@ while True:
     time.sleep(1)
 3.Consumidor:
 
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import from_json, col, window, from_unixtime, to_timestamp, avg
+from pyspark.sql.types import StructType, StructField, IntegerType, DoubleType, LongType
+
+spark = (SparkSession.builder
+         .appName("KafkaSparkStreaming")
+         .getOrCreate())
+spark.sparkContext.setLogLevel("WARN")
+
+# Esquema JSON de entrada
+schema = StructType([
+    StructField("sensor_id", IntegerType(), True),
+    StructField("temperature", DoubleType(), True),
+    StructField("humidity", DoubleType(), True),
+    StructField("timestamp", LongType(), True)   # epoch en segundos
+])
+
+# Fuente Kafka (Structured Streaming)
+df = (spark.readStream
+      .format("kafka")
+      .option("kafka.bootstrap.servers", "192.168.10.36:9092")
+      .option("subscribe", "sensor_data")
+      .option("startingOffsets", "earliest")
+      .load())
+
+# Parseo y tiempo de evento (segundos → timestamp)
+parsed = (df
+          .select(from_json(col("value").cast("string"), schema).alias("data"))
+          .select("data.*")
+          .withColumn("event_time", to_timestamp(from_unixtime(col("timestamp"))))
+          .withWatermark("event_time", "2 minutes"))
+
+# Ventanas de 1 minuto por sensor, promedios
+windowed = (parsed
+            .groupBy(window(col("event_time"), "1 minute"), col("sensor_id"))
+            .agg(
+                avg("temperature").alias("avg_temperature"),
+                avg("humidity").alias("avg_humidity")
+            ))
+
+# Consola (complete) para ver estado agregado
+query_console = (windowed.writeStream
+                 .outputMode("complete")
+                 .format("console")
+                 .option("truncate", "false")
+                 .start())
+
+# Parquet (append) + checkpoint (exactly-once y recuperación)
+query_parquet = (windowed.writeStream
+                 .outputMode("append")
+                 .format("parquet")
+                 .option("path", "out/stream/metrics")
+                 .option("checkpointLocation", "out/stream/_chk")
+                 .start())
+
+spark.streams.awaitAnyTermination()
+
+
 0: spark_streaming_consumer.py
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col, window, from_unixtime, to_timestamp, avg
