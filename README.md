@@ -48,7 +48,7 @@ python3 kafka_producer.py
 
 spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3 spark_streaming_consumer.py
 
-http://192.168.0.134:4040
+http://192.168.0.136:4040
 
 Configuracion de broker:✌️
 
